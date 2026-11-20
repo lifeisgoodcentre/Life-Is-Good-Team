@@ -119,6 +119,22 @@ input:focus, select:focus { outline: 2px solid var(--graphite); outline-offset: 
 .auth-brand img { width: 128px; height: auto; display: block; margin: 0 auto 14px; }
 .auth-brand p { margin: 0; font-size: 11px; letter-spacing: 3.5px; text-transform: uppercase; color: #b8bcc2; }
 .auth .card { border: 0; }
+
+/* Sign in ⇄ Create account: the card turns over to show the other side. */
+.flip { perspective: 1400px; }
+.flip-inner { position: relative; display: grid; transform-style: preserve-3d; transition: transform 0ms; }
+.flip-inner.flipped { transform: rotateY(180deg); }
+.flip-inner.animating { transition: transform 720ms cubic-bezier(0.645, 0.045, 0.355, 1), height 720ms cubic-bezier(0.645, 0.045, 0.355, 1); will-change: transform; }
+.face { grid-area: 1 / 1; align-self: start; backface-visibility: hidden; -webkit-backface-visibility: hidden; }
+.face[hidden] { display: none; }
+.face-back { transform: rotateY(180deg); }
+.face + .face { margin-top: 0; }
+.flip-inner.animating .face { pointer-events: none; }
+@keyframes face-in { from { opacity: 0; } }
+.face.fade-in { animation: face-in 200ms ease-out; }
+@media (prefers-reduced-motion: reduce) {
+  .flip-inner.animating { transition: none; }
+}
 .tabs { display: grid; grid-template-columns: 1fr 1fr; background: var(--silver-light); border-radius: 10px; padding: 4px; margin-bottom: 18px; }
 .tabs button { border: 0; background: none; padding: 9px; border-radius: 8px; font-weight: 700; font-size: 12px; letter-spacing: 1.5px; text-transform: uppercase; cursor: pointer; color: var(--muted); }
 .tabs button.on { background: #fff; color: var(--ink); box-shadow: 0 1px 3px rgba(0,0,0,.12); }

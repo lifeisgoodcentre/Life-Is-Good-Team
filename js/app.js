@@ -166,21 +166,10 @@ function viewSetup() {
 // ---------------------------------------------------------------------
 //  Auth
 // ---------------------------------------------------------------------
-function viewAuth(tab = "signin") {
-  const signup = tab === "signup";
-  app.innerHTML = `
-    ${DEMO ? `<div class="demo-banner">Demo mode — create an account with any email to try it.</div>` : ""}
-    <div class="auth">
-      <div class="auth-photo" style="background-image:url(assets/photo-ceiling.jpg)">
-        <div class="quote"><p>“Behind every clean cut is a team that cares.”</p><span>Every client · Every day</span></div>
-      </div>
-      <div class="auth-side"><div class="auth-inner">
-        <div class="auth-brand">
-          <img src="assets/logo-mark-light.png" alt="Life's Good Barber Centre">
-          <p>Team Portal · Onboarding</p>
-        </div>
-        <div class="card">
-          <div class="tabs"><button data-tab="signin" class="${signup ? "" : "on"}">Sign in</button><button data-tab="signup" class="${signup ? "on" : ""}">Create account</button></div>
+function authFace(signup) {
+  return `
+        <div class="card face ${signup ? "face-back" : "face-front"}" data-face="${signup ? "signup" : "signin"}">
+          <div class="tabs" role="tablist"><button type="button" role="tab" data-tab="signin" aria-selected="${!signup}" class="${signup ? "" : "on"}">Sign in</button><button type="button" role="tab" data-tab="signup" aria-selected="${signup}" class="${signup ? "on" : ""}">Create account</button></div>
           <div class="err"></div>
           <form novalidate>
             ${signup ? `
@@ -200,12 +189,86 @@ function viewAuth(tab = "signin") {
           <p class="small muted center" style="margin:14px 0 0">${signup
             ? "Your account will be approved by the Shop Manager before you can start."
             : "Forgot your password? Ask the Shop Manager to reset your access."}</p>
+        </div>`;
+}
+
+function viewAuth(tab = "signin") {
+  app.innerHTML = `
+    ${DEMO ? `<div class="demo-banner">Demo mode — create an account with any email to try it.</div>` : ""}
+    <div class="auth">
+      <div class="auth-photo" style="background-image:url(assets/photo-ceiling.jpg)">
+        <div class="quote"><p>“Behind every clean cut is a team that cares.”</p><span>Every client · Every day</span></div>
+      </div>
+      <div class="auth-side"><div class="auth-inner">
+        <div class="auth-brand">
+          <img src="assets/logo-mark-light.png" alt="Life's Good Barber Centre">
+          <p>Team Portal · Onboarding</p>
         </div>
+        <div class="flip"><div class="flip-inner">${authFace(false)}${authFace(true)}</div></div>
       </div></div>
     </div>`;
-  app.querySelectorAll("[data-tab]").forEach((b) => (b.onclick = () => viewAuth(b.dataset.tab)));
-  const form = app.querySelector("form");
-  const err = app.querySelector(".err");
+
+  const inner = app.querySelector(".flip-inner");
+  const faces = { signin: inner.querySelector('[data-face="signin"]'), signup: inner.querySelector('[data-face="signup"]') };
+  let current = tab === "signup" ? "signup" : "signin";
+
+  const settle = () => {
+    // Only the visible side stays in the layout and in the tab order.
+    for (const [name, el] of Object.entries(faces)) {
+      const active = name === current;
+      el.hidden = !active;
+      el.inert = !active;
+      el.setAttribute("aria-hidden", String(!active));
+    }
+    inner.classList.remove("animating");
+    inner.style.height = "";
+  };
+
+  const flipTo = (target) => {
+    if (target === current && !inner.classList.contains("animating")) return;
+    const from = faces[current], to = faces[target];
+    const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+    // Carry over what was already typed.
+    const fromEmail = from.querySelector("input[name=email]").value, toEmail = to.querySelector("input[name=email]");
+    if (fromEmail && !toEmail.value) toEmail.value = fromEmail;
+    current = target;
+    if (reduce) {
+      inner.classList.toggle("flipped", target === "signup");
+      settle();
+      to.classList.remove("fade-in");
+      void to.offsetWidth;
+      to.classList.add("fade-in");
+      to.querySelector(`[data-tab="${target}"]`).focus({ preventScroll: true });
+      return;
+    }
+    const h0 = inner.offsetHeight;
+    faces.signin.hidden = faces.signup.hidden = false;
+    const h1 = to.offsetHeight;
+    inner.style.height = h0 + "px";
+    inner.classList.add("animating");
+    void inner.offsetHeight; // commit the starting height before animating
+    inner.style.height = h1 + "px";
+    inner.classList.toggle("flipped", target === "signup");
+    to.inert = false;
+    to.setAttribute("aria-hidden", "false");
+    from.inert = true;
+    from.setAttribute("aria-hidden", "true");
+    to.querySelector(`[data-tab="${target}"]`).focus({ preventScroll: true });
+  };
+
+  inner.addEventListener("transitionend", (e) => {
+    if (e.target === inner && e.propertyName === "transform") settle();
+  });
+  inner.classList.toggle("flipped", current === "signup");
+  settle();
+
+  for (const [name, face] of Object.entries(faces)) wireAuthForm(face, name === "signup");
+  inner.querySelectorAll("[data-tab]").forEach((b) => (b.onclick = () => flipTo(b.dataset.tab)));
+}
+
+function wireAuthForm(face, signup) {
+  const form = face.querySelector("form");
+  const err = face.querySelector(".err");
   const pwToggle = form.querySelector(".pw-toggle");
   pwToggle.onclick = (e) => {
     e.preventDefault();
