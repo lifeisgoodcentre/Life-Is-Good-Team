@@ -6,6 +6,9 @@ import { createSignaturePad } from "./signature.js";
 // ---------------------------------------------------------------------
 const ROLES = ["Barber", "Apprentice", "Receptionist", "Shift Leader", "Shop Manager"];
 const LOCATIONS = ["Cannon Hill", "Coorparoo"];
+const EYE_SVG = (slash) => `<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>${slash ? `<path d="M4 4l16 16"/>` : ""}</svg>`;
+const EYE_OPEN = EYE_SVG(false);
+const EYE_CLOSED = EYE_SVG(true);
 const EMPLOYMENT = ["Full-time", "Part-time", "Casual", "Fixed-term"];
 const TEE_SIZES = ["XS", "S", "M", "L", "XL", "2XL", "3XL"];
 const TRACK_INFO = {
@@ -191,7 +194,7 @@ function viewAuth(tab = "signin") {
                 <label class="field"><span>Tee size</span><select name="tee">${TEE_SIZES.map((t) => `<option ${t === "M" ? "selected" : ""}>${t}</option>`).join("")}</select></label>
               </div>` : ""}
             <label class="field"><span>Email</span><input name="email" type="email" autocomplete="email" required></label>
-            <label class="field"><span>Password</span><input name="password" type="password" autocomplete="${signup ? "new-password" : "current-password"}" minlength="8" required></label>
+            <label class="field"><span>Password</span><span class="pw"><input name="password" type="password" autocomplete="${signup ? "new-password" : "current-password"}" minlength="8" required><button type="button" class="pw-toggle" aria-label="Show password" aria-pressed="false">${EYE_OPEN}</button></span></label>
             <button class="btn gold block" type="submit">${signup ? "Create account" : "Sign in"}</button>
           </form>
           <p class="small muted center" style="margin:14px 0 0">${signup
@@ -203,6 +206,17 @@ function viewAuth(tab = "signin") {
   app.querySelectorAll("[data-tab]").forEach((b) => (b.onclick = () => viewAuth(b.dataset.tab)));
   const form = app.querySelector("form");
   const err = app.querySelector(".err");
+  const pwToggle = form.querySelector(".pw-toggle");
+  pwToggle.onclick = (e) => {
+    e.preventDefault();
+    const input = form.querySelector("input[name=password]");
+    const show = input.type === "password";
+    input.type = show ? "text" : "password";
+    pwToggle.setAttribute("aria-pressed", String(show));
+    pwToggle.setAttribute("aria-label", show ? "Hide password" : "Show password");
+    pwToggle.innerHTML = show ? EYE_CLOSED : EYE_OPEN;
+    input.focus();
+  };
   form.onsubmit = async (e) => {
     e.preventDefault();
     const f = Object.fromEntries(new FormData(form));
