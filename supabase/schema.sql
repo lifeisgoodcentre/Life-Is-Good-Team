@@ -25,7 +25,7 @@ create table if not exists public.profiles (
   id              uuid primary key references auth.users (id) on delete cascade,
   email           text,
   full_name       text not null check (length(trim(full_name)) between 2 and 80),
-  role            text not null check (role in ('Shop Manager','Shift Leader','Barber','Apprentice','Receptionist')),
+  role            text not null,
   location        text not null check (location in ('Cannon Hill','Coorparoo')),
   status          text not null default 'pending' check (status in ('pending','active','inactive')),
   is_admin        boolean not null default false,
@@ -37,6 +37,11 @@ create table if not exists public.profiles (
 alter table public.profiles add column if not exists employment_type text check (employment_type in ('Full-time','Part-time','Casual','Fixed-term'));
 alter table public.profiles add column if not exists tee_size text check (tee_size in ('XS','S','M','L','XL','2XL','3XL'));
 alter table public.profiles add column if not exists tee_received_at timestamptz;
+-- Roles (Nov 2026): Barber -> Hairstylist, Shop Manager -> Manager, plus Admin.
+alter table public.profiles drop constraint if exists profiles_role_check;
+update public.profiles set role = 'Hairstylist' where role = 'Barber';
+update public.profiles set role = 'Manager' where role = 'Shop Manager';
+alter table public.profiles add constraint profiles_role_check check (role in ('Apprentice','Hairstylist','Shift Leader','Manager','Receptionist','Admin'));
 
 -- Learning modules. track: 'code' (Code of Conduct, versioned + signed),
 -- 'safety' (WHS induction), 'role' (role-specific training).

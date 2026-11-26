@@ -27,14 +27,15 @@ function fakeSignature(seed) {
 }
 
 export async function createDemoApi({ fast = false } = {}) {
-  let code, onboarding;
+  let code, onboarding, roleSections;
   try {
     code = (await import("../private/content.mjs")).sections;
     onboarding = await import("../private/onboarding.mjs");
+    roleSections = (await import("../private/apprentice.mjs")).apprenticeSections;
   } catch {
     err("The demo needs the private/ folder, which only exists on the computer where the portal was built.");
   }
-  const sections = [...onboarding.safetySections, ...code.map((s) => ({ track: "code", ...s }))]
+  const sections = [...onboarding.safetySections, ...code.map((s) => ({ track: "code", ...s })), ...roleSections]
     .sort((a, b) => TRACKS.indexOf(a.track) - TRACKS.indexOf(b.track))
     .map((s, i) => ({
       id: s.id, ord: i + 1, track: s.track, roles: s.roles || null, kicker: s.kicker, title: s.title, summary: s.summary,
@@ -61,12 +62,12 @@ export async function createDemoApi({ fast = false } = {}) {
   function seed() {
     const d = { version: "1.0", auth: {}, profiles: {}, progress: {}, acks: {}, attempts: [], checklist: {}, receipts: {}, session: null };
     const team = [
-      ["Marco Silva", "Barber", "Coorparoo", "active", "Full-time", "L", true, 99, 12, 4300],
+      ["Marco Silva", "Hairstylist", "Coorparoo", "active", "Full-time", "L", true, 99, 12, 4300],
       ["Aisha Rahman", "Shift Leader", "Cannon Hill", "active", "Full-time", "M", true, 99, 99, 2900],
       ["Jess Nguyen", "Receptionist", "Cannon Hill", "active", "Casual", "S", false, 7, 5, 600],
       ["Tom Becker", "Apprentice", "Coorparoo", "active", "Part-time", "M", false, 2, 2, 1500],
-      ["Diego Ramos", "Barber", "Coorparoo", "active", "Casual", "XL", false, 0, 0, 0],
-      ["Liam O'Connor", "Barber", "Cannon Hill", "pending", "Full-time", "L", false, 0, 0, 0],
+      ["Diego Ramos", "Hairstylist", "Coorparoo", "active", "Casual", "XL", false, 0, 0, 0],
+      ["Liam O'Connor", "Hairstylist", "Cannon Hill", "pending", "Full-time", "L", false, 0, 0, 0],
     ];
     team.forEach(([name, role, loc, status, type, tee, teeGot, done, checks, minsAgo], n) => {
       const id = uid();
